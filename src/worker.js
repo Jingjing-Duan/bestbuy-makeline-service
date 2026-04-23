@@ -26,6 +26,8 @@ async function startWorker() {
     async (msg) => {
       if (!msg) return;
 
+      let orderId = null;
+
       try {
         const content = msg.content.toString();
         const order = JSON.parse(content);
@@ -33,7 +35,11 @@ async function startWorker() {
         console.log('📥 Order received:', order);
 
         const now = new Date();
-        const orderId = order.orderId || order._id;
+        orderId = order.orderId || order._id?.toString();
+
+        if (!orderId) {
+          throw new Error('Missing orderId in message');
+        }
 
         await orders.updateOne(
           { orderId },
@@ -45,7 +51,8 @@ async function startWorker() {
               total: order.total || order.totalAmount || 0,
               status: 'received',
               receivedAt: now,
-              updatedAt: now
+              updatedAt: now,
+              errorMessage: null
             }
           },
           { upsert: true }
@@ -62,6 +69,8 @@ async function startWorker() {
         );
 
         console.log(`⚙️ Processing order ${orderId}...`);
+
+        // 模拟后台处理
         await sleep(3000);
 
         await orders.updateOne(
@@ -70,16 +79,35 @@ async function startWorker() {
             $set: {
               status: 'completed',
               completedAt: new Date(),
-              updatedAt: new Date()
+              updatedAt: new Date(),
+              errorMessage: null
             }
           }
         );
 
         console.log(`✅ Order completed: ${orderId}`);
-
         channel.ack(msg);
       } catch (err) {
         console.error('❌ Worker error:', err.message);
+
+        if (orderId) {
+          try {
+            await orders.updateOne(
+              { orderId },
+              {
+                $set: {
+                  status: 'failed',
+                  errorMessage: err.message,
+                  updatedAt: new Date()
+                }
+              },
+              { upsert: true }
+            );
+          } catch (dbErr) {
+            console.error('❌ Failed to update failed status:', dbErr.message);
+          }
+        }
+
         channel.nack(msg, false, false);
       }
     },
