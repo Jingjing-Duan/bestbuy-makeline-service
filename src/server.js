@@ -21,9 +21,11 @@ async function startServer() {
     await startWorker();
     console.log('✅ Makeline worker started');
 
+    console.log('CI/CD Demo');
+
     // 4. Start API server
     app.listen(PORT, () => {
-      console.log(`🚀 Makeline Service running on port ${PORT}`);
+      console.log(` Makeline Service running on port ${PORT}`);
     });
   } catch (err) {
     console.error('❌ Failed to start service:', err.message);
