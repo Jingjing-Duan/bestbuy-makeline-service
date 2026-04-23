@@ -11,6 +11,6 @@ app.get('/', (req, res) => {
   res.send('Makeline Service is running');
 });
 
-app.use('/api/orders', orderRoutes);
+app.use('/api/makeline', orderRoutes);
 
 module.exports = app;
