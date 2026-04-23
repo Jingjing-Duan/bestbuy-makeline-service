@@ -1,7 +1,5 @@
 require('dotenv').config();
 
-console.log('MONGO_URL =', process.env.MONGO_URL);
-
 const app = require('./app');
 const { connectDB } = require('./db');
 const { connectRabbitMQ } = require('./rabbitmq');
